@@ -13,7 +13,6 @@ import (
 	"github.com/ipfs/go-cid"
 	blockstore "github.com/ipfs/go-ipfs-blockstore"
 	_ "github.com/mattn/go-sqlite3"
-	"github.com/multiformats/go-multibase"
 )
 
 // pragmas are sqlite pragmas to be applied at initialization.
@@ -57,7 +56,7 @@ const (
 var statements = [...]string{
 	stmtHas:       "SELECT EXISTS (SELECT 1 FROM blocks WHERE mh = ?)",
 	stmtGet:       "SELECT bytes FROM blocks WHERE mh = ?",
-	stmtGetSize:   "SELECT LENGTH(bytes) FROM blocks WHERE mh ? ?",
+	stmtGetSize:   "SELECT LENGTH(bytes) FROM blocks WHERE mh = ?",
 	stmtPut:       "INSERT OR IGNORE INTO blocks (mh, codec, bytes) VALUES (?, ?, ?)",
 	stmtDelete:    "DELETE FROM blocks WHERE mh = ?",
 	stmtSelectAll: "SELECT mh, codec FROM blocks",
@@ -188,7 +187,7 @@ func (b *Blockstore) AllKeysChan(ctx context.Context) (<-chan cid.Cid, error) {
 
 			switch err := q.Scan(&mh, &codec); {
 			case err == nil:
-				if _, mh, err := multibase.Decode(mh); err != nil {
+				if mh, err := base64.RawStdEncoding.DecodeString(mh); err != nil {
 					log.Printf("failed to parse multihash when querying all keys in sqlite3 blockstore: %s", err)
 				} else {
 					ret <- cid.NewCidV1(codec, mh)
@@ -204,8 +203,12 @@ func (b *Blockstore) AllKeysChan(ctx context.Context) (<-chan cid.Cid, error) {
 	return ret, nil
 }
 
-func (b *Blockstore) HashOnRead(enabled bool) {
+func (b *Blockstore) HashOnRead(_ bool) {
 	log.Print("sqlite3 blockstore ignored HashOnRead request")
+}
+
+func (b *Blockstore) Close() error {
+	return b.db.Close()
 }
 
 func keyFromCid(c cid.Cid) string {
