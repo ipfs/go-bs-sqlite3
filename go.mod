@@ -1,4 +1,4 @@
-module github.com/ipfs/go-ds-sqlite
+module github.com/ipfs/go-bs-sqlite3
 
 go 1.15
 
