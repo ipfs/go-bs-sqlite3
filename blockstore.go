@@ -18,10 +18,13 @@ import (
 // pragmas are sqlite pragmas to be applied at initialization.
 var pragmas = []string{
 	fmt.Sprintf("PRAGMA busy_timeout = %d", 10*1000), // milliseconds
-	"PRAGMA synchronous = OFF",
+	"PRAGMA synchronous = normal",
+	"PRAGMA temp_store = memory",
+	"PRAGMA mmap_size = 30000000000",
+	"PRAGMA page_size = 32768",
 	"PRAGMA auto_vacuum = NONE",
 	"PRAGMA automatic_index = OFF",
-	"PRAGMA journal_mode = OFF",
+	"PRAGMA journal_mode = WAL",
 	"PRAGMA read_uncommitted = ON",
 }
 
