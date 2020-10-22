@@ -162,7 +162,7 @@ func TestReopenPutGet(t *testing.T) {
 	err = bs.Close()
 	require.NoError(t, err)
 
-	bs, err = Open(path)
+	bs, err = Open(path, Options{})
 	require.NoError(t, err)
 
 	fetched, err := bs.Get(orig.Cid())
@@ -239,7 +239,7 @@ func newBlockstore(tb testing.TB) (*Blockstore, string) {
 	}
 
 	path := tmp.Name()
-	db, err := Open(path)
+	db, err := Open(path, Options{})
 	if err != nil {
 		tb.Fatal(err)
 	}

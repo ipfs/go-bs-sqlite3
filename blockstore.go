@@ -6,19 +6,18 @@ import (
 	"encoding/base64"
 	"fmt"
 	"log"
-	"runtime"
 	"sync"
+	"sync/atomic"
 
 	blocks "github.com/ipfs/go-block-format"
 	"github.com/ipfs/go-cid"
 	blockstore "github.com/ipfs/go-ipfs-blockstore"
-	_ "github.com/mattn/go-sqlite3"
+	"github.com/mattn/go-sqlite3"
 )
 
 // pragmas are sqlite pragmas to be applied at initialization.
 var pragmas = []string{
 	fmt.Sprintf("PRAGMA busy_timeout = %d", 10*1000), // milliseconds
-	fmt.Sprintf("PRAGMA threads = %d", (runtime.NumCPU()/4)+1),
 	"PRAGMA synchronous = OFF",
 	"PRAGMA auto_vacuum = NONE",
 	"PRAGMA automatic_index = OFF",
@@ -73,17 +72,32 @@ type Blockstore struct {
 
 var _ blockstore.Blockstore = (*Blockstore)(nil)
 
-func Open(path string) (*Blockstore, error) {
-	db, err := sql.Open("sqlite3", path+"?mode=rwc")
+type Options struct {
+	// placeholder
+}
+
+// counter of sqlite drivers registered; guarded by atomic.
+var counter int64
+
+// Open creates a new sqlite3-backed blockstore.
+func Open(path string, _ Options) (*Blockstore, error) {
+	driver := fmt.Sprintf("sqlite3_blockstore_%d", atomic.AddInt64(&counter, 1))
+	sql.Register(driver,
+		&sqlite3.SQLiteDriver{
+			ConnectHook: func(conn *sqlite3.SQLiteConn) error {
+				// Execute pragmas on connection creation.
+				for _, p := range pragmas {
+					if _, err := conn.Exec(p, nil); err != nil {
+						return fmt.Errorf("failed to execute sqlite3 init pragma: %s; err: %w", p, err)
+					}
+				}
+				return nil
+			},
+		})
+
+	db, err := sql.Open(driver, path+"?mode=rwc")
 	if err != nil {
 		return nil, fmt.Errorf("failed to open sqlite3 database: %w", err)
-	}
-
-	// Execute pragmas.
-	for _, p := range pragmas {
-		if _, err := db.Exec(p); err != nil {
-			return nil, fmt.Errorf("failed to execute sqlite3 init pragma: %s; err: %w", p, err)
-		}
 	}
 
 	// Execute init DDLs.
