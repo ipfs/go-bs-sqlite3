@@ -6,7 +6,6 @@ import (
 	"encoding/base64"
 	"fmt"
 	"log"
-	"sync"
 	"sync/atomic"
 
 	blocks "github.com/ipfs/go-block-format"
@@ -67,7 +66,6 @@ var statements = [...]string{
 // Blockstore is a sqlite backed IPLD blockstore, highly optimized and
 // customized for IPLD query and write patterns.
 type Blockstore struct {
-	lk sync.RWMutex
 	db *sql.DB
 
 	prepared [len(statements)]*sql.Stmt
