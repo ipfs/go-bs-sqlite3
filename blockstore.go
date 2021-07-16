@@ -153,24 +153,27 @@ func (b *Blockstore) AllKeysChan(ctx context.Context) (<-chan cid.Cid, error) {
 		defer close(ret)
 
 		for ctx.Err() == nil && q.Next() {
-			var mh string
+			var mhStr string
 			var codec uint64
 
-			switch err := q.Scan(&mh, &codec); {
-			case err == nil:
-				if mh, err := base64.RawStdEncoding.DecodeString(mh); err != nil {
-					log.Printf("failed to parse multihash when querying all keys in sqlite3 blockstore: %s", err)
-				} else {
-					select {
-					case ret <- cid.NewCidV1(codec, mh):
-					case <-ctx.Done():
-						return
-					}
+			if err := q.Scan(&mhStr, &codec); err != nil {
+				if ctx.Err() != nil {
+					// We failed because the context was canceled.
+					return
 				}
-			case ctx.Err() != nil:
-				return // context was cancelled
-			default:
 				log.Printf("failed when querying all keys in sqlite3 blockstore: %s", err)
+				return
+			}
+
+			mh, err := base64.RawStdEncoding.DecodeString(mhStr)
+			if err != nil {
+				log.Printf("failed to parse multihash when querying all keys in sqlite3 blockstore: %s", err)
+				continue
+			}
+
+			select {
+			case ret <- cid.NewCidV1(codec, mh):
+			case <-ctx.Done():
 				return
 			}
 		}
