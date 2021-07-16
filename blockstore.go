@@ -152,7 +152,7 @@ func (b *Blockstore) AllKeysChan(ctx context.Context) (<-chan cid.Cid, error) {
 	go func() {
 		defer close(ret)
 
-		for q.Next() {
+		for ctx.Err() == nil && q.Next() {
 			var mh string
 			var codec uint64
 
@@ -161,7 +161,11 @@ func (b *Blockstore) AllKeysChan(ctx context.Context) (<-chan cid.Cid, error) {
 				if mh, err := base64.RawStdEncoding.DecodeString(mh); err != nil {
 					log.Printf("failed to parse multihash when querying all keys in sqlite3 blockstore: %s", err)
 				} else {
-					ret <- cid.NewCidV1(codec, mh)
+					select {
+					case ret <- cid.NewCidV1(codec, mh):
+					case <-ctx.Done():
+						return
+					}
 				}
 			case ctx.Err() != nil:
 				return // context was cancelled

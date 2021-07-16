@@ -143,9 +143,11 @@ func TestAllKeysRespectsContext(t *testing.T) {
 
 	cancel()
 
-	v, ok = <-ch
-	require.Equal(t, cid.Undef, v)
-	require.False(t, ok)
+	received := 0
+	for range ch {
+		received++
+		require.LessOrEqual(t, received, 10, "expected query to be canceled")
+	}
 }
 
 func TestDoubleClose(t *testing.T) {
