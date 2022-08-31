@@ -1,18 +1,16 @@
 //go:build cgo
-// +build cgo
 
 package sqlite3bs
 
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"testing"
 
 	blocks "github.com/ipfs/go-block-format"
 	"github.com/ipfs/go-cid"
-	"github.com/ipfs/go-ipfs-blockstore"
+	blockstore "github.com/ipfs/go-ipfs-blockstore"
 	u "github.com/ipfs/go-ipfs-util"
 
 	"github.com/stretchr/testify/require"
@@ -238,7 +236,7 @@ func TestDelete(t *testing.T) {
 func newBlockstore(tb testing.TB) (*Blockstore, string) {
 	tb.Helper()
 
-	tmp, err := ioutil.TempFile("", "")
+	tmp, err := os.CreateTemp("", "")
 	if err != nil {
 		tb.Fatal(err)
 	}
