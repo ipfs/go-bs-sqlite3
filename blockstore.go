@@ -10,6 +10,7 @@ import (
 	blocks "github.com/ipfs/go-block-format"
 	"github.com/ipfs/go-cid"
 	blockstore "github.com/ipfs/go-ipfs-blockstore"
+	ipld "github.com/ipfs/go-ipld-format"
 )
 
 // pragmas are sqlite pragmas to be applied at initialization.
@@ -75,7 +76,7 @@ type Options struct {
 	// placeholder
 }
 
-func (b *Blockstore) Has(cid cid.Cid) (bool, error) {
+func (b *Blockstore) Has(ctx context.Context, cid cid.Cid) (bool, error) {
 	var ret bool
 	err := b.prepared[stmtHas].QueryRow(keyFromCid(cid)).Scan(&ret)
 	if err != nil {
@@ -84,11 +85,11 @@ func (b *Blockstore) Has(cid cid.Cid) (bool, error) {
 	return ret, err
 }
 
-func (b *Blockstore) Get(cid cid.Cid) (blocks.Block, error) {
+func (b *Blockstore) Get(ctx context.Context, cid cid.Cid) (blocks.Block, error) {
 	var data []byte
 	switch err := b.prepared[stmtGet].QueryRow(keyFromCid(cid)).Scan(&data); err {
 	case sql.ErrNoRows:
-		return nil, blockstore.ErrNotFound
+		return nil, ipld.ErrNotFound{cid}
 	case nil:
 		return blocks.NewBlockWithCid(data, cid)
 	default:
@@ -96,12 +97,12 @@ func (b *Blockstore) Get(cid cid.Cid) (blocks.Block, error) {
 	}
 }
 
-func (b *Blockstore) GetSize(cid cid.Cid) (int, error) {
+func (b *Blockstore) GetSize(ctx context.Context, cid cid.Cid) (int, error) {
 	var size int
 	switch err := b.prepared[stmtGetSize].QueryRow(keyFromCid(cid)).Scan(&size); err {
 	case sql.ErrNoRows:
 		// https://github.com/ipfs/go-ipfs-blockstore/blob/v1.0.1/blockstore.go#L183-L185
-		return -1, blockstore.ErrNotFound
+		return -1, ipld.ErrNotFound{cid}
 	case nil:
 		return size, nil
 	default:
@@ -109,7 +110,7 @@ func (b *Blockstore) GetSize(cid cid.Cid) (int, error) {
 	}
 }
 
-func (b *Blockstore) Put(block blocks.Block) error {
+func (b *Blockstore) Put(ctx context.Context, block blocks.Block) error {
 	var (
 		cid   = block.Cid()
 		codec = block.Cid().Prefix().Codec
@@ -123,16 +124,16 @@ func (b *Blockstore) Put(block blocks.Block) error {
 	return err
 }
 
-func (b *Blockstore) PutMany(blocks []blocks.Block) error {
+func (b *Blockstore) PutMany(ctx context.Context, blocks []blocks.Block) error {
 	for i, blk := range blocks {
-		if err := b.Put(blk); err != nil {
+		if err := b.Put(ctx, blk); err != nil {
 			return fmt.Errorf("failed to put block %d/%d with CID %s into sqlite3 blockstore: %w", i, len(blocks), blk.Cid(), err)
 		}
 	}
 	return nil
 }
 
-func (b *Blockstore) DeleteBlock(cid cid.Cid) error {
+func (b *Blockstore) DeleteBlock(ctx context.Context, cid cid.Cid) error {
 	_, err := b.prepared[stmtDelete].Exec(keyFromCid(cid))
 	return err
 }
