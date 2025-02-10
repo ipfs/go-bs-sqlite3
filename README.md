@@ -1,2 +1,3 @@
 # go-bs-sqlite3
-optimized sqlite3-backed IPFS blockstore 
+
+Optimized sqlite3-backed IPFS blockstore - compatible with [https://github.com/ipfs/boxo/tree/main/blockstore](https://github.com/ipfs/boxo/tree/main/blockstore)
