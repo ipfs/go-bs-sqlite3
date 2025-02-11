@@ -4,13 +4,13 @@ import (
 	"context"
 	"database/sql"
 	"encoding/base64"
-	"errors"
 	"fmt"
 	"log"
 
 	"github.com/ipfs/boxo/blockstore"
 	blocks "github.com/ipfs/go-block-format"
 	"github.com/ipfs/go-cid"
+	ipld "github.com/ipfs/go-ipld-format"
 )
 
 // pragmas are sqlite pragmas to be applied at initialization.
@@ -42,8 +42,6 @@ var initDDL = []string{
 	// version 1.
 	`INSERT OR IGNORE INTO _meta (version) VALUES (1)`,
 }
-
-var ErrNotFound = errors.New("blockstore: block not found")
 
 const (
 	stmtHas = iota
@@ -91,7 +89,7 @@ func (b *Blockstore) Get(ctx context.Context, cid cid.Cid) (blocks.Block, error)
 	var data []byte
 	switch err := b.prepared[stmtGet].QueryRow(keyFromCid(cid)).Scan(&data); err {
 	case sql.ErrNoRows:
-		return nil, ErrNotFound
+		return nil, ipld.ErrNotFound{Cid: cid}
 	case nil:
 		return blocks.NewBlockWithCid(data, cid)
 	default:
@@ -103,7 +101,7 @@ func (b *Blockstore) GetSize(ctx context.Context, cid cid.Cid) (int, error) {
 	var size int
 	switch err := b.prepared[stmtGetSize].QueryRow(keyFromCid(cid)).Scan(&size); err {
 	case sql.ErrNoRows:
-		return -1, ErrNotFound
+		return -1, ipld.ErrNotFound{Cid: cid}
 	case nil:
 		return size, nil
 	default:
