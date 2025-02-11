@@ -10,7 +10,7 @@ import (
 	"github.com/ipfs/boxo/blockstore"
 	blocks "github.com/ipfs/go-block-format"
 	"github.com/ipfs/go-cid"
-	ipld "github.com/ipfs/go-ipld-format"
+	ds "github.com/ipfs/go-datastore"
 )
 
 // pragmas are sqlite pragmas to be applied at initialization.
@@ -89,7 +89,7 @@ func (b *Blockstore) Get(ctx context.Context, cid cid.Cid) (blocks.Block, error)
 	var data []byte
 	switch err := b.prepared[stmtGet].QueryRow(keyFromCid(cid)).Scan(&data); err {
 	case sql.ErrNoRows:
-		return nil, ipld.ErrNotFound{Cid: cid}
+		return nil, ds.ErrNotFound
 	case nil:
 		return blocks.NewBlockWithCid(data, cid)
 	default:
@@ -101,7 +101,7 @@ func (b *Blockstore) GetSize(ctx context.Context, cid cid.Cid) (int, error) {
 	var size int
 	switch err := b.prepared[stmtGetSize].QueryRow(keyFromCid(cid)).Scan(&size); err {
 	case sql.ErrNoRows:
-		return -1, ipld.ErrNotFound{Cid: cid}
+		return -1, ds.ErrNotFound
 	case nil:
 		return size, nil
 	default:
