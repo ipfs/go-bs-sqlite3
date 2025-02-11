@@ -11,6 +11,7 @@ import (
 	u "github.com/ipfs/boxo/util"
 	blocks "github.com/ipfs/go-block-format"
 	"github.com/ipfs/go-cid"
+	ipld "github.com/ipfs/go-ipld-format"
 
 	"github.com/stretchr/testify/require"
 )
@@ -23,7 +24,7 @@ func TestGetWhenKeyNotPresent(t *testing.T) {
 	c := cid.NewCidV0(u.Hash([]byte("stuff")))
 	bl, err := bs.Get(ctx, c)
 	require.Nil(t, bl)
-	require.Equal(t, ErrNotFound, err)
+	require.Equal(t, ipld.ErrNotFound{ Cid: c } , err)
 }
 
 func TestGetWhenKeyIsNil(t *testing.T) {
@@ -32,7 +33,7 @@ func TestGetWhenKeyIsNil(t *testing.T) {
 	ctx := context.Background()
 
 	_, err := bs.Get(ctx, cid.Undef)
-	require.Equal(t, ErrNotFound, err)
+	require.Equal(t, ipld.ErrNotFound{ Cid: cid.Undef }, err)
 }
 
 func TestPutThenGetBlock(t *testing.T) {
@@ -108,7 +109,7 @@ func TestPutThenGetSizeBlock(t *testing.T) {
 	require.Zero(t, emptySize)
 
 	missingSize, err := bs.GetSize(ctx, missingBlock.Cid())
-	require.Equal(t, ErrNotFound, err)
+	require.Equal(t, ipld.ErrNotFound{ Cid: missingBlock.Cid() }, err)
 	require.Equal(t, -1, missingSize)
 }
 
