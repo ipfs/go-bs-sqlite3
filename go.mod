@@ -1,6 +1,6 @@
 module github.com/ipfs/go-bs-sqlite3
 
-go 1.22
+go 1.23
 
 require (
 	github.com/ipfs/go-block-format v0.0.2
