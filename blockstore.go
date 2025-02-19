@@ -89,7 +89,7 @@ func (b *Blockstore) Get(ctx context.Context, cid cid.Cid) (blocks.Block, error)
 	var data []byte
 	switch err := b.prepared[stmtGet].QueryRow(keyFromCid(cid)).Scan(&data); err {
 	case sql.ErrNoRows:
-		return nil, ipld.ErrNotFound{cid}
+		return nil, ipld.ErrNotFound{Cid: cid}
 	case nil:
 		return blocks.NewBlockWithCid(data, cid)
 	default:
@@ -102,7 +102,7 @@ func (b *Blockstore) GetSize(ctx context.Context, cid cid.Cid) (int, error) {
 	switch err := b.prepared[stmtGetSize].QueryRow(keyFromCid(cid)).Scan(&size); err {
 	case sql.ErrNoRows:
 		// https://github.com/ipfs/go-ipfs-blockstore/blob/v1.0.1/blockstore.go#L183-L185
-		return -1, ipld.ErrNotFound{cid}
+		return -1, ipld.ErrNotFound{Cid: cid}
 	case nil:
 		return size, nil
 	default:
