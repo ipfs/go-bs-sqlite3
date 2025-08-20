@@ -1,6 +1,6 @@
 module github.com/ipfs/go-bs-sqlite3
 
-go 1.23
+go 1.24
 
 require (
 	github.com/ipfs/boxo v0.27.4
